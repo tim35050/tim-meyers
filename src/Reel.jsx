@@ -266,14 +266,25 @@ function ReelSlide({ p, ink, accent, muted, bg, onOpen }) {
       </span>
 
       <div style={{ height: "72vh", position: "relative" }}>
-        <Cover
-          colors={p.colors}
-          seed={p.seed}
-          fill
-          big
-          label={p.kind}
-          meta={`№ 0${p.idx}`}
-        />
+        {p.media ? (
+          <MediaCover
+            src={p.media}
+            bg={p.colors?.[0]}
+            label={p.kind}
+            meta={`№ 0${p.idx}`}
+            fill
+            big
+          />
+        ) : (
+          <Cover
+            colors={p.colors}
+            seed={p.seed}
+            fill
+            big
+            label={p.kind}
+            meta={`№ 0${p.idx}`}
+          />
+        )}
         <div
           className="mono"
           style={{
@@ -288,7 +299,7 @@ function ReelSlide({ p, ink, accent, muted, bg, onOpen }) {
             gap: 14,
           }}
         >
-          <span>◇ figure 0{p.idx + 1}</span>
+          <span>◇ figure 0{p.idx}</span>
           <span style={{ opacity: 0.55 }}>—</span>
           <span>{p.title.toLowerCase()}</span>
         </div>
@@ -417,6 +428,75 @@ function ReelSlide({ p, ink, accent, muted, bg, onOpen }) {
   );
 }
 
+function MediaCover({ src, bg, label, meta, ratio, fill = false, big = false }) {
+  const isVideo = /\.(mp4|webm|mov|m4v)$/i.test(src);
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        ...(fill ? { height: "100%" } : { aspectRatio: `${ratio || 1}` }),
+        overflow: "hidden",
+        background: bg || "#000",
+      }}
+    >
+      {isVideo ? (
+        <video
+          src={src}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+      ) : (
+        <img
+          src={src}
+          alt={label || ""}
+          loading="lazy"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+      )}
+      {(label || meta) && (
+        <div
+          className="mono"
+          style={{
+            position: "absolute",
+            inset: big ? "28px 30px" : "16px 18px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            color: "#fff",
+            mixBlendMode: "difference",
+            fontSize: big ? 11 : 10,
+            letterSpacing: ".14em",
+            textTransform: "uppercase",
+            pointerEvents: "none",
+          }}
+        >
+          <span>{label}</span>
+          {meta && <span style={{ opacity: 0.85 }}>{meta}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MobileSlide({ p, ink, accent, muted, bg, onOpen }) {
   return (
     <article
@@ -453,13 +533,23 @@ function MobileSlide({ p, ink, accent, muted, bg, onOpen }) {
         {p.title}
       </h3>
       <div style={{ marginBottom: 18 }}>
-        <Cover
-          colors={p.colors}
-          seed={p.seed}
-          ratio={1.5}
-          label={p.kind}
-          meta={`№ 0${p.idx}`}
-        />
+        {p.media ? (
+          <MediaCover
+            src={p.media}
+            bg={p.colors?.[0]}
+            label={p.kind}
+            meta={`№ 0${p.idx}`}
+            ratio={1.5}
+          />
+        ) : (
+          <Cover
+            colors={p.colors}
+            seed={p.seed}
+            ratio={1.5}
+            label={p.kind}
+            meta={`№ 0${p.idx}`}
+          />
+        )}
       </div>
       <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: `${ink}cc` }}>
         {p.blurb}

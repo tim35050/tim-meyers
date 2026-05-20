@@ -5,24 +5,32 @@ import {
   DEFAULT_PALETTE,
   GRAIN_URL,
   PROJECTS,
+  ARCHIVE,
   EXPERIENCE,
 } from "./data.js";
 import {
   CursorGlow,
   Reveal,
   Cover,
-  ParallaxTitle,
   Magnet,
   Clock,
+  ParallaxTitle,
 } from "./primitives.jsx";
 import { Reel } from "./Reel.jsx";
 import { ProjectModal } from "./ProjectModal.jsx";
+import { CVModal } from "./CVModal.jsx";
 import { TweaksPanel } from "./TweaksPanel.jsx";
 
 export default function App() {
   const [palette, setPalette] = useState(DEFAULT_PALETTE);
   const [bg, surface, ink, accent, muted] = palette;
   const [openProject, setOpenProject] = useState(null);
+  const [openExperience, setOpenExperience] = useState(null);
+
+  const getProject = (idx) =>
+    PROJECTS.find((p) => p.idx === idx) ||
+    ARCHIVE.find((p) => p.idx === idx) ||
+    null;
 
   useLayoutEffect(() => {
     const r = document.documentElement.style;
@@ -128,159 +136,216 @@ export default function App() {
 
       {/* ─── HERO ──────────────────────────────────────────────── */}
       <section
+        data-h-hero-layout
         style={{
           position: "relative",
           zIndex: 2,
           padding: "160px 6vw 80px",
           minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
+          display: "grid",
+          gridTemplateColumns: "1.35fr 1fr",
+          gap: "5vw",
+          alignItems: "stretch",
         }}
       >
-        <Reveal>
-          <div
-            className="mono"
-            style={{
-              fontSize: 11,
-              color: muted,
-              letterSpacing: ".16em",
-              textTransform: "uppercase",
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-            }}
-          >
-            <span style={{ color: accent, fontSize: 18 }}>✶</span>
-            <span>Vol. xxvi · summer mmxxvi · paris</span>
-          </div>
-        </Reveal>
-
-        <div>
-          <Reveal delay={100}>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: "clamp(80px, 16vw, 280px)",
-                lineHeight: 0.84,
-                letterSpacing: "-0.05em",
-                fontWeight: 800,
-                color: ink,
-              }}
-            >
-              <ParallaxTitle text="Tim" color={ink} accent={accent} />
-              <br />
-              <ParallaxTitle
-                text={
-                  <>
-                    Meyers<span style={{ color: accent }}>.</span>
-                  </>
-                }
-                color={ink}
-                accent={accent}
-              />
-            </h1>
-          </Reveal>
-          <Reveal delay={260}>
+        {/* Left: text content */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            minWidth: 0,
+            gap: 48,
+          }}
+        >
+          <Reveal>
             <div
-              data-h-hero-grid
+              className="mono"
               style={{
-                marginTop: 46,
-                display: "grid",
-                gridTemplateColumns: "1.4fr 1fr",
-                gap: "6vw",
-                alignItems: "flex-end",
+                fontSize: 11,
+                color: muted,
+                letterSpacing: ".16em",
+                textTransform: "uppercase",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
               }}
             >
-              <p
+              <span style={{ color: accent, fontSize: 18 }}>✶</span>
+              <span>Vol. xxvi · summer mmxxvi · paris</span>
+            </div>
+          </Reveal>
+
+          <div>
+            <Reveal delay={100}>
+              <h1
                 style={{
                   margin: 0,
-                  fontSize: "clamp(18px, 1.6vw, 26px)",
-                  lineHeight: 1.4,
+                  marginTop: "clamp(24px, 3vw, 56px)",
+                  fontSize: "clamp(64px, 11vw, 220px)",
+                  lineHeight: 0.84,
+                  letterSpacing: "-0.05em",
+                  fontWeight: 800,
                   color: ink,
-                  fontWeight: 400,
-                  maxWidth: "40ch",
                 }}
               >
-                French-American technology generalist. Fifteen years building at
-                the seams of{" "}
-                <span style={{ color: accent, fontWeight: 600 }}>data</span>,{" "}
-                <span style={{ color: accent, fontWeight: 600 }}>design</span>,{" "}
-                <span style={{ color: accent, fontWeight: 600 }}>code</span> and{" "}
-                <span style={{ color: accent, fontWeight: 600 }}>impact</span>.
-              </p>
+                <ParallaxTitle text="Tim" color={ink} accent={accent} />
+                <br />
+                <ParallaxTitle
+                  text={
+                    <>
+                      Meyers<span style={{ color: accent }}>.</span>
+                    </>
+                  }
+                  color={ink}
+                  accent={accent}
+                />
+              </h1>
+            </Reveal>
+            <Reveal delay={260}>
               <div
+                data-h-hero-grid
                 style={{
+                  marginTop: 40,
                   display: "flex",
                   flexDirection: "column",
-                  alignItems: "flex-end",
-                  gap: 18,
+                  gap: 28,
+                  alignItems: "flex-start",
                 }}
               >
-                <Magnet
-                  href="#work"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const el = document.getElementById("work");
-                    if (el)
-                      window.scrollTo({
-                        top: el.offsetTop,
-                        behavior: "smooth",
-                      });
-                  }}
-                  className="mono"
+                <p
                   style={{
-                    padding: "18px 30px",
-                    background: accent,
-                    color: bg,
-                    fontSize: 12,
-                    letterSpacing: ".14em",
-                    textTransform: "uppercase",
-                    fontWeight: 600,
-                    borderRadius: 99,
-                  }}
-                >
-                  Roll the reel ◯→
-                </Magnet>
-                <Magnet
-                  href="mailto:tim@bello.art"
-                  className="mono"
-                  strength={12}
-                  style={{
-                    fontSize: 11,
+                    margin: 0,
+                    fontSize: "clamp(17px, 1.4vw, 22px)",
+                    lineHeight: 1.4,
                     color: ink,
-                    letterSpacing: ".14em",
-                    textTransform: "uppercase",
-                    borderBottom: `1px solid ${ink}33`,
-                    paddingBottom: 3,
+                    fontWeight: 400,
+                    maxWidth: "40ch",
                   }}
                 >
-                  tim@bello.art
-                </Magnet>
+                  French-American technology generalist. Fifteen years building
+                  at the seams of{" "}
+                  <span style={{ color: accent, fontWeight: 600 }}>data</span>,{" "}
+                  <span style={{ color: accent, fontWeight: 600 }}>design</span>,{" "}
+                  <span style={{ color: accent, fontWeight: 600 }}>code</span>{" "}
+                  and{" "}
+                  <span style={{ color: accent, fontWeight: 600 }}>impact</span>.
+                </p>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    gap: 16,
+                  }}
+                >
+                  <Magnet
+                    href="#work"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const el = document.getElementById("work");
+                      if (el)
+                        window.scrollTo({
+                          top: el.offsetTop,
+                          behavior: "smooth",
+                        });
+                    }}
+                    className="mono"
+                    style={{
+                      padding: "18px 30px",
+                      background: accent,
+                      color: bg,
+                      fontSize: 12,
+                      letterSpacing: ".14em",
+                      textTransform: "uppercase",
+                      fontWeight: 600,
+                      borderRadius: 99,
+                    }}
+                  >
+                    Roll the reel ◯→
+                  </Magnet>
+                  <Magnet
+                    href="mailto:tim@bello.art"
+                    className="mono"
+                    strength={12}
+                    style={{
+                      fontSize: 11,
+                      color: ink,
+                      letterSpacing: ".14em",
+                      textTransform: "uppercase",
+                      borderBottom: `1px solid ${ink}33`,
+                      paddingBottom: 3,
+                    }}
+                  >
+                    tim@bello.art
+                  </Magnet>
+                </div>
               </div>
+            </Reveal>
+          </div>
+
+          <Reveal delay={400}>
+            <div
+              data-h-hero-meta
+              className="mono"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 10,
+                color: muted,
+                letterSpacing: ".16em",
+                textTransform: "uppercase",
+                paddingTop: 18,
+                borderTop: `1px solid ${ink}14`,
+              }}
+            >
+              <span>↓ scroll to begin</span>
+              <span>{`${PROJECTS.length + ARCHIVE.length} works · 2009 → 2026`}</span>
+              <span>open for work · paris</span>
             </div>
           </Reveal>
         </div>
 
-        <Reveal delay={400}>
+        {/* Right: portrait */}
+        <Reveal delay={200}>
           <div
-            data-h-hero-meta
-            className="mono"
+            data-h-hero-photo
             style={{
               display: "flex",
-              justifyContent: "space-between",
-              fontSize: 10,
-              color: muted,
-              letterSpacing: ".16em",
-              textTransform: "uppercase",
-              marginTop: 96,
-              paddingTop: 18,
-              borderTop: `1px solid ${ink}14`,
+              flexDirection: "column",
+              gap: 14,
+              height: "100%",
+              minHeight: 0,
             }}
           >
-            <span>↓ scroll to begin</span>
-            <span>{`${PROJECTS.length} works · 2009 → 2026`}</span>
-            <span>open for work · paris</span>
+            <div
+              className="mono"
+              style={{
+                fontSize: 11,
+                color: muted,
+                letterSpacing: ".16em",
+                textTransform: "uppercase",
+                display: "flex",
+                gap: 14,
+              }}
+            >
+              <span>◇ figure 01</span>
+              <span style={{ opacity: 0.55 }}>—</span>
+              <span>self portrait</span>
+            </div>
+            <img
+              src="/tim-paris.jpg"
+              alt="Tim Meyers, Paris"
+              style={{
+                width: "100%",
+                aspectRatio: "0.78 / 1",
+                objectFit: "cover",
+                display: "block",
+                background: "rgba(237, 237, 237, 0.063)",
+                filter:
+                  "grayscale(12%) contrast(104%) brightness(94%) saturate(92%)",
+              }}
+            />
           </div>
         </Reveal>
       </section>
@@ -401,24 +466,50 @@ export default function App() {
                   borderTop: `1px solid ${ink}14`,
                 }}
               >
-                Before <b style={{ color: ink }}>bello</b>: eight years at Meta,
-                three at DecisionTek simulating rail accidents for the FRA, a
-                master's at Berkeley with field research on labor NGOs in
-                Guangzhou, a homelessness nonprofit in 2012, three months in
-                Vietnam in 2009.
+                Before <b style={{ color: ink }}>bello</b>: two years as an
+                Adobe-sponsored artist, seven years of data at Meta, three at
+                DecisionTek simulating rail accidents for the FRA, and a
+                master's at Berkeley shipping TIRO, an award-winning app for
+                labor NGOs in Guangzhou.
               </p>
             </div>
           </Reveal>
 
           <Reveal delay={300}>
             <div style={{ position: "relative" }}>
-              <Cover
-                colors={["#1a1815", accent, `${accent}55`, "#2a2520"]}
-                seed={29}
-                ratio={1.05}
-                label="bello.art · studio surface"
-                meta="2024 → ongoing"
-              />
+              <div style={{ position: "relative", overflow: "hidden" }}>
+                <img
+                  src="/bello-studio.jpg"
+                  alt="bello.art studio — mockup editor"
+                  loading="lazy"
+                  style={{
+                    width: "100%",
+                    aspectRatio: "1.05 / 1",
+                    objectFit: "cover",
+                    display: "block",
+                    background: "rgba(237, 237, 237, 0.063)",
+                  }}
+                />
+                <div
+                  className="mono"
+                  style={{
+                    position: "absolute",
+                    inset: "16px 18px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-end",
+                    color: "#fff",
+                    mixBlendMode: "difference",
+                    fontSize: 10,
+                    letterSpacing: ".14em",
+                    textTransform: "uppercase",
+                    pointerEvents: "none",
+                  }}
+                >
+                  <span>bello.art · studio surface</span>
+                  <span style={{ opacity: 0.85 }}>2024 → ongoing</span>
+                </div>
+              </div>
               <div
                 className="mono"
                 style={{
@@ -452,6 +543,249 @@ export default function App() {
         surface={surface}
         onOpen={setOpenProject}
       />
+
+      {/* ─── Archive (§ 02·B — sub-section of the reel) ──────────── */}
+      <section
+        id="archive"
+        style={{
+          position: "relative",
+          zIndex: 2,
+          padding: "140px 6vw 60px",
+          borderTop: `1px solid ${ink}14`,
+        }}
+      >
+        <div
+          data-h-sec-head
+          style={{
+            display: "grid",
+            gridTemplateColumns: "90px 1fr 90px",
+            gap: 36,
+            marginBottom: 60,
+          }}
+        >
+          <Reveal>
+            <div
+              className="mono"
+              style={{
+                fontSize: 11,
+                color: muted,
+                letterSpacing: ".16em",
+                textTransform: "uppercase",
+              }}
+            >
+              § 02 · b
+            </div>
+          </Reveal>
+          <Reveal delay={120}>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "clamp(34px, 4.6vw, 72px)",
+                lineHeight: 1.02,
+                letterSpacing: "-0.03em",
+                fontWeight: 700,
+                color: ink,
+                maxWidth: "18ch",
+              }}
+            >
+              From the <span style={{ color: accent }}>archive</span>.
+            </h2>
+          </Reveal>
+          <Reveal delay={200}>
+            <div
+              className="mono"
+              style={{
+                fontSize: 11,
+                color: muted,
+                letterSpacing: ".16em",
+                textTransform: "uppercase",
+                textAlign: "right",
+              }}
+            >
+              {`${ARCHIVE.filter((p) => !p.hidden).length} works`}
+            </div>
+          </Reveal>
+        </div>
+
+        <Reveal delay={150}>
+          <p
+            style={{
+              margin: "0 0 50px",
+              maxWidth: "58ch",
+              fontSize: "clamp(14px, 1.05vw, 17px)",
+              lineHeight: 1.6,
+              color: `${ink}99`,
+            }}
+          >
+            Older work, research projects, and side efforts — kept here for the
+            record. Click any card to read more.
+          </p>
+        </Reveal>
+
+        <div
+          data-h-archive-grid
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: 24,
+          }}
+        >
+          {ARCHIVE.filter((p) => !p.hidden).map((p, i) => (
+            <Reveal key={p.idx} delay={i * 60}>
+              <button
+                onClick={() => setOpenProject(p)}
+                style={{
+                  all: "unset",
+                  cursor: "pointer",
+                  display: "block",
+                  width: "100%",
+                  textAlign: "left",
+                  background: `${ink}06`,
+                  border: `1px solid ${ink}14`,
+                  transition:
+                    "background .25s, border-color .25s, transform .25s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = `${ink}10`;
+                  e.currentTarget.style.borderColor = `${accent}66`;
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  const arrow = e.currentTarget.querySelector("[data-arr]");
+                  if (arrow) arrow.style.transform = "translate(2px, -2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = `${ink}06`;
+                  e.currentTarget.style.borderColor = `${ink}14`;
+                  e.currentTarget.style.transform = "translateY(0)";
+                  const arrow = e.currentTarget.querySelector("[data-arr]");
+                  if (arrow) arrow.style.transform = "translate(0, 0)";
+                }}
+              >
+                <div style={{ position: "relative", overflow: "hidden" }}>
+                  {p.media ? (
+                    <div
+                      style={{
+                        position: "relative",
+                        width: "100%",
+                        aspectRatio: "1.45 / 1",
+                        overflow: "hidden",
+                        background: p.colors?.[0] || "#000",
+                      }}
+                    >
+                      <img
+                        src={p.media}
+                        alt={p.title}
+                        loading="lazy"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                        }}
+                      />
+                      <div
+                        className="mono"
+                        style={{
+                          position: "absolute",
+                          inset: "16px 18px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-end",
+                          color: "#fff",
+                          mixBlendMode: "difference",
+                          fontSize: 10,
+                          letterSpacing: ".14em",
+                          textTransform: "uppercase",
+                          pointerEvents: "none",
+                        }}
+                      >
+                        <span>{p.kind}</span>
+                        <span style={{ opacity: 0.85 }}>
+                          № {String(p.idx).padStart(2, "0")}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <Cover
+                      colors={p.colors}
+                      seed={p.seed}
+                      ratio={1.45}
+                      label={p.kind}
+                      meta={`№ ${String(p.idx).padStart(2, "0")}`}
+                    />
+                  )}
+                </div>
+
+                <div style={{ padding: "20px 22px 22px" }}>
+                  <div
+                    className="mono"
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "baseline",
+                      color: muted,
+                      marginBottom: 10,
+                      fontSize: 10,
+                      letterSpacing: ".14em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    <span>{p.kind}</span>
+                    <span>{p.year}</span>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      gap: 14,
+                    }}
+                  >
+                    <h3
+                      style={{
+                        margin: 0,
+                        fontSize: "clamp(20px, 1.8vw, 26px)",
+                        lineHeight: 1.1,
+                        letterSpacing: "-0.02em",
+                        fontWeight: 700,
+                        color: ink,
+                      }}
+                    >
+                      {p.title}
+                    </h3>
+                    <span
+                      data-arr
+                      style={{
+                        fontSize: 14,
+                        color: accent,
+                        flex: "0 0 auto",
+                        marginTop: 4,
+                        transition:
+                          "transform .35s cubic-bezier(.2,.7,.3,1)",
+                      }}
+                    >
+                      ↗
+                    </span>
+                  </div>
+                  <p
+                    style={{
+                      margin: "12px 0 0",
+                      fontSize: 13.5,
+                      lineHeight: 1.55,
+                      color: `${ink}aa`,
+                      display: "-webkit-box",
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {p.blurb}
+                  </p>
+                </div>
+              </button>
+            </Reveal>
+          ))}
+        </div>
+      </section>
 
       {/* ─── CV ────────────────────────────────────────────────── */}
       <section
@@ -517,10 +851,14 @@ export default function App() {
         <div>
           {EXPERIENCE.map((e, i) => (
             <Reveal key={i} delay={i * 40}>
-              <a
+              <button
                 data-h-cv-row
-                href="#"
+                onClick={() => setOpenExperience(e)}
                 style={{
+                  all: "unset",
+                  cursor: "pointer",
+                  width: "100%",
+                  boxSizing: "border-box",
                   display: "grid",
                   gridTemplateColumns: "140px 1.4fr 1fr 50px",
                   alignItems: "baseline",
@@ -529,7 +867,6 @@ export default function App() {
                   borderTop: `1px solid ${ink}14`,
                   transition: "background .25s, padding .25s",
                 }}
-                onClick={(ev) => ev.preventDefault()}
                 onMouseEnter={(el) => {
                   el.currentTarget.style.background = `${ink}08`;
                   el.currentTarget.style.paddingLeft = "26px";
@@ -567,7 +904,7 @@ export default function App() {
                 <span style={{ fontSize: 18, color: accent, textAlign: "right" }}>
                   →
                 </span>
-              </a>
+              </button>
             </Reveal>
           ))}
           <div style={{ borderTop: `1px solid ${ink}14` }} />
@@ -599,6 +936,7 @@ export default function App() {
         </Reveal>
         <Reveal delay={120}>
           <a
+            data-h-contact-email
             href="mailto:tim@bello.art"
             style={{
               display: "inline-block",
@@ -707,6 +1045,21 @@ export default function App() {
         muted={muted}
         bg={bg}
         surface={surface}
+      />
+
+      {/* CV row detail: bullets + project tiles */}
+      <CVModal
+        experience={openExperience}
+        getProject={getProject}
+        onClose={() => setOpenExperience(null)}
+        onOpenProject={(p) => {
+          setOpenExperience(null);
+          setOpenProject(p);
+        }}
+        ink={ink}
+        accent={accent}
+        muted={muted}
+        bg={bg}
       />
     </div>
   );

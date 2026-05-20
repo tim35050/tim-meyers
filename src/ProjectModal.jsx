@@ -1,10 +1,57 @@
 // ProjectModal.jsx — deep-dive scrollable article with media gallery
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Cover } from "./primitives.jsx";
+import { Lightbox } from "./Lightbox.jsx";
+
+// Renders a paragraph string with markdown-style links: [text](url).
+// The URL pattern allows one level of nested parens so Wikipedia URLs
+// like `(rail)` resolve correctly. Exported so the Lightbox can reuse it
+// on figure captions.
+export function renderWithLinks(text, accent) {
+  const parts = [];
+  const regex = /\[([^\]]+)\]\(([^()]*(?:\([^()]*\)[^()]*)*)\)/g;
+  let lastIdx = 0;
+  let key = 0;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIdx) {
+      parts.push(text.slice(lastIdx, match.index));
+    }
+    parts.push(
+      <a
+        key={key++}
+        href={match[2]}
+        target="_blank"
+        rel="noreferrer"
+        style={{
+          color: "inherit",
+          borderBottom: `1px solid ${accent}88`,
+          transition: "border-color .2s, color .2s",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderBottomColor = accent;
+          e.currentTarget.style.color = accent;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderBottomColor = `${accent}88`;
+          e.currentTarget.style.color = "inherit";
+        }}
+      >
+        {match[1]}
+      </a>,
+    );
+    lastIdx = regex.lastIndex;
+  }
+  if (lastIdx < text.length) {
+    parts.push(text.slice(lastIdx));
+  }
+  return parts;
+}
 
 // ─── Media item — image / video / generative placeholder ───────────────
-function MediaItem({ item, ink, muted, big = false, ratio }) {
+function MediaItem({ item, ink, accent, muted, big = false, ratio, onClick }) {
   const r = ratio || item.ratio || 1.5;
+  const clickable = typeof onClick === "function";
   const figcap = (item.caption || item.figure) && (
     <figcaption
       className="mono"
@@ -19,7 +66,7 @@ function MediaItem({ item, ink, muted, big = false, ratio }) {
         gap: 14,
       }}
     >
-      <span>{item.caption}</span>
+      <span>{renderWithLinks(item.caption || "", accent)}</span>
       {item.figure && (
         <span style={{ whiteSpace: "nowrap", color: ink, fontWeight: 600 }}>
           {item.figure}
@@ -28,19 +75,23 @@ function MediaItem({ item, ink, muted, big = false, ratio }) {
     </figcaption>
   );
 
+  const mediaStyle = {
+    width: "100%",
+    aspectRatio: String(r),
+    objectFit: "cover",
+    display: "block",
+    background: `${ink}10`,
+    cursor: clickable ? "zoom-in" : "default",
+  };
+
   if (item.type === "image") {
     return (
       <figure style={{ margin: 0 }}>
         <img
           src={item.src}
           alt={item.alt || ""}
-          style={{
-            width: "100%",
-            aspectRatio: String(r),
-            objectFit: "cover",
-            display: "block",
-            background: `${ink}10`,
-          }}
+          onClick={onClick}
+          style={mediaStyle}
         />
         {figcap}
       </figure>
@@ -55,13 +106,8 @@ function MediaItem({ item, ink, muted, big = false, ratio }) {
           muted
           loop
           playsInline
-          style={{
-            width: "100%",
-            aspectRatio: String(r),
-            objectFit: "cover",
-            display: "block",
-            background: `${ink}10`,
-          }}
+          onClick={onClick}
+          style={mediaStyle}
         />
         {figcap}
       </figure>
@@ -84,61 +130,50 @@ function MediaItem({ item, ink, muted, big = false, ratio }) {
 }
 
 export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
+  const [lightboxIdx, setLightboxIdx] = useState(null);
+
+  // Scroll lock — only captures/restores body overflow on open/close.
+  // Kept separate from the Escape-key effect so it doesn't re-run when
+  // lightboxIdx changes (which would re-capture `prev` after the Lightbox
+  // had already overwritten it, corrupting the restored value).
   useEffect(() => {
     if (!project) return;
-    const onKey = (e) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [project, onClose]);
+  }, [project]);
+
+  // Escape key — gated so it doesn't close the project modal while the
+  // lightbox is open (the lightbox handles its own Escape).
+  useEffect(() => {
+    if (!project) return;
+    const onKey = (e) => {
+      if (e.key === "Escape" && lightboxIdx == null) onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [project, onClose, lightboxIdx]);
+
+  // Reset lightbox when the underlying project changes
+  useEffect(() => {
+    setLightboxIdx(null);
+  }, [project]);
 
   if (!project) return null;
 
   const paras = project.details || [project.blurb];
 
-  // Default gallery: 4 placeholder slots tuned to the project's palette.
-  // Replace by setting `gallery: [{type:'image'|'video', src, caption, figure}, ...]`
-  // on the project.
-  const gallery = project.gallery || [
-    {
-      type: "placeholder",
-      colors: project.colors,
-      seed: project.seed + 17,
-      ratio: 1.5,
-      caption: "drop image / video — overview",
-      figure: "Fig. 01",
-    },
-    {
-      type: "placeholder",
-      colors: project.colors,
-      seed: project.seed + 31,
-      ratio: 1.5,
-      caption: "drop image / video — detail",
-      figure: "Fig. 02",
-    },
-    {
-      type: "placeholder",
-      colors: project.colors,
-      seed: project.seed + 47,
-      ratio: 1.5,
-      caption: "drop image / video — process",
-      figure: "Fig. 03",
-    },
-    {
-      type: "placeholder",
-      colors: project.colors,
-      seed: project.seed + 59,
-      ratio: 1.5,
-      caption: "drop image / video — outcome",
-      figure: "Fig. 04",
-    },
-  ];
+  // Only image/video items are lightbox-eligible (placeholders are skipped).
+  const lightboxMedia = (project.gallery || []).filter(
+    (g) => g.type === "image" || g.type === "video",
+  );
+
+  // Set `gallery: [{type:'image'|'video', src, caption, figure}, ...]` on a
+  // project to render a Gallery section. Projects without a gallery skip the
+  // section entirely (no auto-generated placeholders).
+  const gallery = project.gallery || [];
 
   return (
     <div
@@ -210,17 +245,28 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
           ×
         </button>
 
-        {/* Hero figure */}
+        {/* Hero figure — use project.media when available, otherwise generative cover */}
         <div style={{ padding: 0, marginTop: -56 }}>
           <MediaItem
-            item={{
-              type: "placeholder",
-              colors: project.colors,
-              seed: project.seed,
-              label: project.kind,
-              figure: `№ ${String(project.idx).padStart(2, "0")}`,
-            }}
+            item={
+              project.media
+                ? {
+                    type: /\.(mp4|webm|mov|m4v)$/i.test(project.media)
+                      ? "video"
+                      : "image",
+                    src: project.media,
+                    alt: project.title,
+                  }
+                : {
+                    type: "placeholder",
+                    colors: project.colors,
+                    seed: project.seed,
+                    label: project.kind,
+                    figure: `№ ${String(project.idx).padStart(2, "0")}`,
+                  }
+            }
             ink={ink}
+            accent={accent}
             muted={muted}
             ratio={1.85}
             big
@@ -274,21 +320,40 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
           </div>
         </div>
 
-        {/* Body */}
+        {/* Body — strings render as paragraphs, { h: "..." } render as headings */}
         <div style={{ padding: "32px 8% 16px", maxWidth: 760, margin: "0 auto" }}>
-          {paras.map((para, i) => (
-            <p
-              key={i}
-              style={{
-                margin: "0 0 18px",
-                fontSize: "clamp(15px, 1.15vw, 17.5px)",
-                lineHeight: 1.65,
-                color: i === 0 ? ink : `${ink}cc`,
-              }}
-            >
-              {para}
-            </p>
-          ))}
+          {paras.map((para, i) => {
+            if (typeof para === "object" && para && para.h) {
+              return (
+                <h3
+                  key={i}
+                  style={{
+                    margin: "36px 0 14px",
+                    fontSize: "clamp(20px, 1.8vw, 28px)",
+                    lineHeight: 1.2,
+                    letterSpacing: "-0.02em",
+                    fontWeight: 700,
+                    color: ink,
+                  }}
+                >
+                  {para.h}
+                </h3>
+              );
+            }
+            return (
+              <p
+                key={i}
+                style={{
+                  margin: "0 0 18px",
+                  fontSize: "clamp(15px, 1.15vw, 17.5px)",
+                  lineHeight: 1.65,
+                  color: i === 0 ? ink : `${ink}cc`,
+                }}
+              >
+                {renderWithLinks(para, accent)}
+              </p>
+            );
+          })}
         </div>
 
         {/* Gallery */}
@@ -324,9 +389,26 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
                 gap: "28px 24px",
               }}
             >
-              {gallery.map((m, i) => (
-                <MediaItem key={i} item={m} ink={ink} muted={muted} />
-              ))}
+              {gallery.map((m, i) => {
+                const isMedia = m.type === "image" || m.type === "video";
+                const lbIdx = isMedia
+                  ? lightboxMedia.findIndex((lm) => lm === m)
+                  : -1;
+                return (
+                  <MediaItem
+                    key={i}
+                    item={m}
+                    ink={ink}
+                    accent={accent}
+                    muted={muted}
+                    onClick={
+                      isMedia && lbIdx >= 0
+                        ? () => setLightboxIdx(lbIdx)
+                        : undefined
+                    }
+                  />
+                );
+              })}
             </div>
           </div>
         )}
@@ -382,6 +464,14 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
           )}
         </div>
       </article>
+
+      <Lightbox
+        items={lightboxMedia}
+        index={lightboxIdx}
+        onIndexChange={setLightboxIdx}
+        onClose={() => setLightboxIdx(null)}
+        accent={accent}
+      />
     </div>
   );
 }

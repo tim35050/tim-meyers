@@ -185,9 +185,27 @@ export function Cover({
 }
 
 // ─── 3D parallax hero title — letters shift on mouse move ───────────────
+// Desktop only: on touch / coarse-pointer devices, taps would fire a single
+// synthesized mousemove and strand the accent silhouettes in odd positions,
+// so we render plain text instead.
 export function ParallaxTitle({ text, color, accent }) {
   const ref = useRef(null);
+  const [interactive, setInteractive] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia
+      ? window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      : true,
+  );
+
   useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const onChange = (e) => setInteractive(e.matches);
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!interactive) return;
     const onMove = (e) => {
       if (!ref.current) return;
       const r = ref.current.getBoundingClientRect();
@@ -205,11 +223,20 @@ export function ParallaxTitle({ text, color, accent }) {
     };
     window.addEventListener("mousemove", onMove);
     return () => window.removeEventListener("mousemove", onMove);
-  }, []);
+  }, [interactive]);
+
+  if (!interactive) {
+    return <span style={{ color, display: "inline-block" }}>{text}</span>;
+  }
+
   return (
-    <div
+    <span
       ref={ref}
-      style={{ position: "relative", display: "inline-block", perspective: 1000 }}
+      style={{
+        position: "relative",
+        display: "inline-block",
+        perspective: 1000,
+      }}
     >
       <span
         data-l="-1.0"
@@ -244,7 +271,7 @@ export function ParallaxTitle({ text, color, accent }) {
         data-l="0"
         style={{
           position: "relative",
-          color: color,
+          color,
           display: "inline-block",
           transition: "transform .35s cubic-bezier(.2,.7,.3,1)",
           willChange: "transform",
@@ -252,7 +279,7 @@ export function ParallaxTitle({ text, color, accent }) {
       >
         {text}
       </span>
-    </div>
+    </span>
   );
 }
 
