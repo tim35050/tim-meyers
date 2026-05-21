@@ -19,11 +19,11 @@ export function CVModal({
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    // No body scroll-lock — `overscroll-behavior: contain` on the backdrop
+    // prevents scroll chaining without triggering full-document layout
+    // recalc on close (which was causing 4+ second paint cycles on mobile).
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
     };
   }, [experience, onClose]);
 
@@ -47,6 +47,7 @@ export function CVModal({
         backdropFilter: "blur(14px)",
         WebkitBackdropFilter: "blur(14px)",
         overflowY: "auto",
+        overscrollBehavior: "contain",
         padding: "8vh 4vw",
         animation: "pm-fade-in .25s ease forwards",
       }}

@@ -133,21 +133,19 @@ function MediaItem({ item, ink, accent, muted, big = false, ratio, onClick }) {
 export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
   const [lightboxIdx, setLightboxIdx] = useState(null);
 
-  // Scroll lock — only captures/restores body overflow on open/close.
-  // Kept separate from the Escape-key effect so it doesn't re-run when
-  // lightboxIdx changes (which would re-capture `prev` after the Lightbox
-  // had already overwritten it, corrupting the restored value).
+  // Scroll lock — no longer toggles body.style.overflow because that was
+  // triggering a 4+ second full-document layout recalc on mobile when the
+  // modal unmounted. The backdrop uses `overscroll-behavior: contain` to
+  // prevent scroll chaining instead, so the body underneath stays in
+  // whatever state it was already in.
   useEffect(() => {
     if (!project) {
       perfLog("ProjectModal: render with project=null");
       return;
     }
     perfLog("ProjectModal: mount effect", project.title);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
-      perfLog("ProjectModal: cleanup effect (body overflow restored)");
-      document.body.style.overflow = prev;
+      perfLog("ProjectModal: cleanup effect (no-op scroll restore)");
     };
   }, [project]);
 
@@ -198,6 +196,7 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
         backdropFilter: "blur(14px)",
         WebkitBackdropFilter: "blur(14px)",
         overflowY: "auto",
+        overscrollBehavior: "contain",
         padding: "4vh 4vw",
         animation: "pm-fade-in .25s ease forwards",
       }}
@@ -227,6 +226,19 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
           onPointerDown={() => perfLog("Close: pointerdown")}
           onClick={(e) => {
             perfLog("Close: click handler fired");
+            // Pause autoplay videos before unmount so iOS releases the
+            // hardware decoder gracefully instead of blocking the next paint.
+            try {
+              const vids = document.querySelectorAll(
+                "[data-h-modal] video",
+              );
+              vids.forEach((v) => {
+                v.pause();
+                v.removeAttribute("src");
+                v.load();
+              });
+              perfLog("Close: paused videos", vids.length);
+            } catch {}
             onClose();
             perfLog("Close: onClose() returned");
             let frame = 0;
