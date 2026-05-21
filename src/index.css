@@ -173,6 +173,19 @@ a {
     max-width: 100% !important;
     overflow-x: hidden !important;
   }
+  /* Drop backdrop-filter on mobile — GPU-expensive on phones, especially
+     iOS Safari. The lag you see when tapping the close X is the browser
+     repainting the page through the blur as the modal unmounts. Solid
+     darker overlay is essentially free to repaint. */
+  [data-h-modal-backdrop] {
+    background: rgba(0, 0, 0, 0.92) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  [data-h-modal-close] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
   /* Safety net: any unbreakable string in modal body (long URL, long word)
      should wrap rather than overflow the article horizontally. */
   [data-h-modal] p,

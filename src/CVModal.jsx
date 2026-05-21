@@ -35,6 +35,7 @@ export function CVModal({
 
   return (
     <div
+      data-h-modal-backdrop
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -69,6 +70,7 @@ export function CVModal({
             IMPORTANT: `all: unset` must be the FIRST property so it doesn't
             wipe the positioning declared after it. */}
         <button
+          data-h-modal-close
           onClick={onClose}
           aria-label="Close"
           style={{
