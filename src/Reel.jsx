@@ -3,7 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { Cover, useIsMobile } from "./primitives.jsx";
 
 export function Reel({ projects, ink, accent, muted, bg, onOpen }) {
-  const isMobile = useIsMobile();
+  // Use the stacked layout on tablets and landscape phones too — the desktop
+  // horizontal scroll-jack feels too fast on anything smaller than a real
+  // desktop viewport.
+  const isMobile = useIsMobile(1024);
   const sectionRef = useRef(null);
   const trackRef = useRef(null);
   const progressRef = useRef(null);
