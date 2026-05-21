@@ -229,12 +229,13 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
             perfLog("Close: click handler fired");
             onClose();
             perfLog("Close: onClose() returned");
-            requestAnimationFrame(() => {
-              perfLog("Close: rAF 1 (next paint scheduled)");
-              requestAnimationFrame(() => {
-                perfLog("Close: rAF 2 (one paint after)");
-              });
-            });
+            let frame = 0;
+            const tick = () => {
+              frame += 1;
+              perfLog(`Close: rAF ${frame}`);
+              if (frame < 5) requestAnimationFrame(tick);
+            };
+            requestAnimationFrame(tick);
           }}
           aria-label="Close"
           style={{

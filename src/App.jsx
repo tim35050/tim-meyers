@@ -52,9 +52,12 @@ export default function App() {
     >
       <CursorGlow accent={accent} />
 
-      {/* global grain */}
+      {/* global grain — hidden on mobile via CSS because full-viewport
+          mix-blend-mode is GPU-expensive on mobile and was causing 4s
+          paint cycles when the modal closed. */}
       <div
         aria-hidden
+        data-h-grain
         style={{
           position: "fixed",
           inset: 0,
