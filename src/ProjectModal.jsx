@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Cover } from "./primitives.jsx";
 import { Lightbox } from "./Lightbox.jsx";
+import { perfLog } from "./perfLog.js";
 
 // Renders a paragraph string with markdown-style links: [text](url).
 // The URL pattern allows one level of nested parens so Wikipedia URLs
@@ -137,10 +138,15 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
   // lightboxIdx changes (which would re-capture `prev` after the Lightbox
   // had already overwritten it, corrupting the restored value).
   useEffect(() => {
-    if (!project) return;
+    if (!project) {
+      perfLog("ProjectModal: render with project=null");
+      return;
+    }
+    perfLog("ProjectModal: mount effect", project.title);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
+      perfLog("ProjectModal: cleanup effect (body overflow restored)");
       document.body.style.overflow = prev;
     };
   }, [project]);
@@ -178,7 +184,10 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
   return (
     <div
       data-h-modal-backdrop
-      onClick={onClose}
+      onClick={(e) => {
+        perfLog("Backdrop: click handler fired");
+        onClose();
+      }}
       role="dialog"
       aria-modal="true"
       style={{
@@ -213,7 +222,20 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
             wipe the positioning declared after it. */}
         <button
           data-h-modal-close
-          onClick={onClose}
+          onTouchStart={() => perfLog("Close: touchstart")}
+          onTouchEnd={() => perfLog("Close: touchend")}
+          onPointerDown={() => perfLog("Close: pointerdown")}
+          onClick={(e) => {
+            perfLog("Close: click handler fired");
+            onClose();
+            perfLog("Close: onClose() returned");
+            requestAnimationFrame(() => {
+              perfLog("Close: rAF 1 (next paint scheduled)");
+              requestAnimationFrame(() => {
+                perfLog("Close: rAF 2 (one paint after)");
+              });
+            });
+          }}
           aria-label="Close"
           style={{
             all: "unset",

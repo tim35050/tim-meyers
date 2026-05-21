@@ -20,6 +20,7 @@ import { Reel } from "./Reel.jsx";
 import { ProjectModal } from "./ProjectModal.jsx";
 import { CVModal } from "./CVModal.jsx";
 import { TweaksPanel } from "./TweaksPanel.jsx";
+import { PerfOverlay } from "./PerfOverlay.jsx";
 
 export default function App() {
   const [palette, setPalette] = useState(DEFAULT_PALETTE);
@@ -1064,6 +1065,9 @@ export default function App() {
         bg={bg}
         surface={surface}
       />
+
+      {/* Debug perf overlay — only visible with ?debug=1 in URL */}
+      <PerfOverlay />
 
       {/* CV row detail: bullets + project tiles */}
       <CVModal
