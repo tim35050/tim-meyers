@@ -65,16 +65,18 @@ export function CVModal({
           animation: "pm-slide-up .35s cubic-bezier(.2,.7,.3,1) forwards",
         }}
       >
-        {/* Close */}
+        {/* Close — fixed to viewport so it's always reachable while scrolling.
+            IMPORTANT: `all: unset` must be the FIRST property so it doesn't
+            wipe the positioning declared after it. */}
         <button
           onClick={onClose}
           aria-label="Close"
           style={{
-            position: "absolute",
-            top: 18,
-            right: 18,
-            zIndex: 5,
             all: "unset",
+            position: "fixed",
+            top: "max(18px, env(safe-area-inset-top))",
+            right: "max(18px, env(safe-area-inset-right))",
+            zIndex: 210,
             cursor: "pointer",
             display: "flex",
             width: 38,
@@ -88,6 +90,7 @@ export function CVModal({
             lineHeight: 1,
             transition: "background .2s",
             backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
             border: `1px solid ${ink}22`,
           }}
           onMouseEnter={(e) => {
@@ -211,6 +214,7 @@ export function CVModal({
               {projects.length === 1 ? "piece" : "pieces"}
             </div>
             <div
+              data-h-cv-related
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",

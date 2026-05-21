@@ -166,7 +166,22 @@ a {
   [data-h-gallery] {
     grid-template-columns: 1fr !important;
   }
+  [data-h-cv-related] {
+    grid-template-columns: 1fr !important;
+  }
   [data-h-modal] {
-    max-height: 100vh !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+  /* Safety net: any unbreakable string in modal body (long URL, long word)
+     should wrap rather than overflow the article horizontally. */
+  [data-h-modal] p,
+  [data-h-modal] h2,
+  [data-h-modal] h3,
+  [data-h-modal] h4,
+  [data-h-modal] li,
+  [data-h-modal] figcaption {
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 }
