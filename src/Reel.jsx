@@ -268,7 +268,25 @@ function ReelSlide({ p, ink, accent, muted, bg, onOpen }) {
         {String(p.idx).padStart(2, "0")}
       </span>
 
-      <div style={{ height: "72vh", position: "relative" }}>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={`Open ${p.title}`}
+        onClick={() => onOpen && onOpen(p)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onOpen && onOpen(p);
+          }
+        }}
+        style={{
+          height: "72vh",
+          position: "relative",
+          cursor: "pointer",
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent",
+        }}
+      >
         {p.media ? (
           <MediaCover
             src={p.media}
@@ -300,6 +318,7 @@ function ReelSlide({ p, ink, accent, muted, bg, onOpen }) {
             textTransform: "uppercase",
             display: "flex",
             gap: 14,
+            pointerEvents: "none",
           }}
         >
           <span>◇ figure 0{p.idx}</span>
@@ -535,7 +554,24 @@ function MobileSlide({ p, ink, accent, muted, bg, onOpen }) {
       >
         {p.title}
       </h3>
-      <div style={{ marginBottom: 18 }}>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={`Open ${p.title}`}
+        onClick={() => onOpen && onOpen(p)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onOpen && onOpen(p);
+          }
+        }}
+        style={{
+          marginBottom: 18,
+          cursor: "pointer",
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent",
+        }}
+      >
         {p.media ? (
           <MediaCover
             src={p.media}

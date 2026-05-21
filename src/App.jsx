@@ -477,7 +477,25 @@ export default function App() {
 
           <Reveal delay={300}>
             <div style={{ position: "relative" }}>
-              <div style={{ position: "relative", overflow: "hidden" }}>
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Open bello.art project"
+                onClick={() => setOpenProject(getProject(1))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setOpenProject(getProject(1));
+                  }
+                }}
+                style={{
+                  position: "relative",
+                  overflow: "hidden",
+                  cursor: "pointer",
+                  touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent",
+                }}
+              >
                 <img
                   src="/bello-studio.jpg"
                   alt="bello.art studio — mockup editor"
