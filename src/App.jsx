@@ -1006,8 +1006,8 @@ export default function App() {
             >
               {[
                 { l: "bello.art", h: "https://bello.art" },
-                { l: "linkedin", h: "#" },
-                { l: "github", h: "#" },
+                { l: "linkedin", h: "http://linkedin.com/in/tim-meyers-tech" },
+                { l: "github", h: "https://github.com/tim35050" },
               ].map((s) => (
                 <a
                   key={s.l}
