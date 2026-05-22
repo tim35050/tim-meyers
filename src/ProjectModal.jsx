@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Cover } from "./primitives.jsx";
 import { Lightbox } from "./Lightbox.jsx";
-import { perfLog } from "./perfLog.js";
 import { renderWithLinks } from "./renderWithLinks.js";
 
 // ─── Media item — image / video / generative placeholder ───────────────
@@ -160,7 +159,6 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
 
   const startClose = () => {
     if (closing) return;
-    perfLog("Close: startClose (begin fade-out)");
     setCloseState({ projectKey, closing: true });
     // Also pause autoplay videos so iOS releases hardware decoders during
     // the fade-out window rather than during the (slow) post-paint.
@@ -171,11 +169,10 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
         v.removeAttribute("src");
         v.load();
       });
-    } catch (err) {
-      perfLog("Close: video cleanup failed", err?.message);
+    } catch {
+      // Best-effort video cleanup; closing should never fail because of it.
     }
     setTimeout(() => {
-      perfLog("Close: fade-out complete, calling onClose()");
       onClose();
     }, 220);
   };
@@ -185,17 +182,6 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
   // modal unmounted. The backdrop uses `overscroll-behavior: contain` to
   // prevent scroll chaining instead, so the body underneath stays in
   // whatever state it was already in.
-  useEffect(() => {
-    if (!project) {
-      perfLog("ProjectModal: render with project=null");
-      return;
-    }
-    perfLog("ProjectModal: mount effect", project.title);
-    return () => {
-      perfLog("ProjectModal: cleanup effect (no-op scroll restore)");
-    };
-  }, [project]);
-
   // Escape key — gated so it doesn't close the project modal while the
   // lightbox is open (the lightbox handles its own Escape).
   useEffect(() => {
@@ -226,7 +212,6 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
     <div
       data-h-modal-backdrop
       onClick={() => {
-        perfLog("Backdrop: click handler fired");
         startClose();
       }}
       role="dialog"
@@ -268,20 +253,7 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
             wipe the positioning declared after it. */}
         <button
           data-h-modal-close
-          onTouchStart={() => perfLog("Close: touchstart")}
-          onTouchEnd={() => perfLog("Close: touchend")}
-          onPointerDown={() => perfLog("Close: pointerdown")}
-          onClick={() => {
-            perfLog("Close: click handler fired");
-            startClose();
-            let frame = 0;
-            const tick = () => {
-              frame += 1;
-              perfLog(`Close: rAF ${frame}`);
-              if (frame < 5) requestAnimationFrame(tick);
-            };
-            requestAnimationFrame(tick);
-          }}
+          onClick={startClose}
           aria-label="Close"
           style={{
             all: "unset",
