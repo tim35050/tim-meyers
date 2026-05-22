@@ -92,8 +92,8 @@ a {
   }
 }
 
-/* ── Responsive (mobile <= 768px) ────────────────────────────────────── */
-@media (max-width: 768px) {
+/* ── Responsive (mobile/tablet <= 1024px) ─────────────────────────────── */
+@media (max-width: 1024px) {
   /* Drop GPU-expensive blend modes on mobile — they were causing
      multi-second paint cycles when modals unmounted on iOS Safari. */
   [data-h-grain] {

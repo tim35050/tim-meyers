@@ -1,6 +1,7 @@
 // Reel.jsx — horizontal-scroll project reel + mobile vertical fallback
 import { useEffect, useRef, useState } from "react";
-import { Cover, useIsMobile } from "./primitives.jsx";
+import { Cover } from "./primitives.jsx";
+import { useIsMobile } from "./useIsMobile.js";
 
 export function Reel({ projects, ink, accent, muted, bg, onOpen }) {
   // Use the stacked layout on tablets and landscape phones too — the desktop

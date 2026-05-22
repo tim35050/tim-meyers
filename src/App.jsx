@@ -52,7 +52,7 @@ export default function App() {
     >
       <CursorGlow accent={accent} />
 
-      {/* global grain — hidden on mobile via CSS because full-viewport
+      {/* Grain layer — hidden on mobile via CSS because full-viewport
           mix-blend-mode is GPU-expensive on mobile and was causing 4s
           paint cycles when the modal closed. */}
       <div

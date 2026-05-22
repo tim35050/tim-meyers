@@ -15,7 +15,7 @@ function isDebugEnabled() {
 }
 
 export function PerfOverlay() {
-  const [enabled, setEnabled] = useState(() => isDebugEnabled());
+  const [enabled] = useState(() => isDebugEnabled());
   const [entries, setEntries] = useState([]);
 
   useEffect(() => {

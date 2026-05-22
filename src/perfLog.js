@@ -15,7 +15,6 @@ export function perfLog(label, extra) {
   buffer.push(entry);
   if (buffer.length > MAX_ENTRIES) buffer.shift();
   // Mirror to console for remote-inspector debugging.
-  // eslint-disable-next-line no-console
   console.log(
     `[perf ${t.toFixed(1)}ms] ${label}` + (extra != null ? ` :: ${extra}` : ""),
   );

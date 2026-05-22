@@ -3,7 +3,7 @@
 // that establishes a containing block (e.g. ProjectModal's backdrop-filter).
 import { useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { renderWithLinks } from "./ProjectModal.jsx";
+import { renderWithLinks } from "./renderWithLinks.js";
 
 export function Lightbox({ items, index, onClose, onIndexChange, accent }) {
   const count = items?.length || 0;

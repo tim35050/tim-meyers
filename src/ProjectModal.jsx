@@ -1,58 +1,45 @@
 // ProjectModal.jsx — deep-dive scrollable article with media gallery
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Cover } from "./primitives.jsx";
 import { Lightbox } from "./Lightbox.jsx";
 import { perfLog } from "./perfLog.js";
-
-// Renders a paragraph string with markdown-style links: [text](url).
-// The URL pattern allows one level of nested parens so Wikipedia URLs
-// like `(rail)` resolve correctly. Exported so the Lightbox can reuse it
-// on figure captions.
-export function renderWithLinks(text, accent) {
-  const parts = [];
-  const regex = /\[([^\]]+)\]\(([^()]*(?:\([^()]*\)[^()]*)*)\)/g;
-  let lastIdx = 0;
-  let key = 0;
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIdx) {
-      parts.push(text.slice(lastIdx, match.index));
-    }
-    parts.push(
-      <a
-        key={key++}
-        href={match[2]}
-        target="_blank"
-        rel="noreferrer"
-        style={{
-          color: "inherit",
-          borderBottom: `1px solid ${accent}88`,
-          transition: "border-color .2s, color .2s",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderBottomColor = accent;
-          e.currentTarget.style.color = accent;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderBottomColor = `${accent}88`;
-          e.currentTarget.style.color = "inherit";
-        }}
-      >
-        {match[1]}
-      </a>,
-    );
-    lastIdx = regex.lastIndex;
-  }
-  if (lastIdx < text.length) {
-    parts.push(text.slice(lastIdx));
-  }
-  return parts;
-}
+import { renderWithLinks } from "./renderWithLinks.js";
 
 // ─── Media item — image / video / generative placeholder ───────────────
-function MediaItem({ item, ink, accent, muted, big = false, ratio, onClick }) {
+function MediaItem({
+  item,
+  ink,
+  accent,
+  muted,
+  big = false,
+  ratio,
+  onClick,
+  eager = false,
+}) {
+  const figureRef = useRef(null);
   const r = ratio || item.ratio || 1.5;
   const clickable = typeof onClick === "function";
+  const shouldEagerLoad = eager || big;
+  const [shouldLoad, setShouldLoad] = useState(shouldEagerLoad);
+
+  useEffect(() => {
+    if (shouldLoad || shouldEagerLoad) return;
+    const node = figureRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") {
+      setShouldLoad(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setShouldLoad(true);
+        io.disconnect();
+      },
+      { rootMargin: "700px 0px" },
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [shouldEagerLoad, shouldLoad]);
   const figcap = (item.caption || item.figure) && (
     <figcaption
       className="mono"
@@ -85,31 +72,57 @@ function MediaItem({ item, ink, accent, muted, big = false, ratio, onClick }) {
     cursor: clickable ? "zoom-in" : "default",
   };
 
+  const placeholder = (
+    <div
+      aria-hidden
+      onClick={onClick}
+      style={{
+        ...mediaStyle,
+        background:
+          item.colors?.[0] ||
+          `linear-gradient(135deg, ${ink}12, ${ink}05)`,
+      }}
+    />
+  );
+
   if (item.type === "image") {
     return (
-      <figure style={{ margin: 0 }}>
-        <img
-          src={item.src}
-          alt={item.alt || ""}
-          onClick={onClick}
-          style={mediaStyle}
-        />
+      <figure ref={figureRef} style={{ margin: 0 }}>
+        {shouldLoad ? (
+          <img
+            src={item.src}
+            alt={item.alt || ""}
+            loading={shouldEagerLoad ? "eager" : "lazy"}
+            decoding="async"
+            fetchPriority={shouldEagerLoad ? "high" : "low"}
+            onClick={onClick}
+            style={mediaStyle}
+          />
+        ) : (
+          placeholder
+        )}
         {figcap}
       </figure>
     );
   }
   if (item.type === "video") {
     return (
-      <figure style={{ margin: 0 }}>
-        <video
-          src={item.src}
-          autoPlay
-          muted
-          loop
-          playsInline
-          onClick={onClick}
-          style={mediaStyle}
-        />
+      <figure ref={figureRef} style={{ margin: 0 }}>
+        {shouldLoad ? (
+          <video
+            src={item.src}
+            autoPlay={shouldEagerLoad}
+            muted
+            loop={shouldEagerLoad}
+            playsInline
+            preload={shouldEagerLoad ? "metadata" : "none"}
+            poster={item.poster}
+            onClick={onClick}
+            style={mediaStyle}
+          />
+        ) : (
+          placeholder
+        )}
         {figcap}
       </figure>
     );
@@ -131,7 +144,41 @@ function MediaItem({ item, ink, accent, muted, big = false, ratio, onClick }) {
 }
 
 export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
-  const [lightboxIdx, setLightboxIdx] = useState(null);
+  const projectKey = project?.idx ?? null;
+  const [lightbox, setLightbox] = useState({ projectKey: null, idx: null });
+  // `closing` triggers an opacity fade BEFORE the actual unmount. On iOS
+  // Safari the post-modal paint can take 4+ seconds, but if the modal is
+  // already opacity:0 by the time it unmounts, the user perceives the
+  // close as instant.
+  const [closeState, setCloseState] = useState({
+    projectKey: null,
+    closing: false,
+  });
+  const closing =
+    closeState.projectKey === projectKey ? closeState.closing : false;
+  const lightboxIdx = lightbox.projectKey === projectKey ? lightbox.idx : null;
+
+  const startClose = () => {
+    if (closing) return;
+    perfLog("Close: startClose (begin fade-out)");
+    setCloseState({ projectKey, closing: true });
+    // Also pause autoplay videos so iOS releases hardware decoders during
+    // the fade-out window rather than during the (slow) post-paint.
+    try {
+      const vids = document.querySelectorAll("[data-h-modal] video");
+      vids.forEach((v) => {
+        v.pause();
+        v.removeAttribute("src");
+        v.load();
+      });
+    } catch (err) {
+      perfLog("Close: video cleanup failed", err?.message);
+    }
+    setTimeout(() => {
+      perfLog("Close: fade-out complete, calling onClose()");
+      onClose();
+    }, 220);
+  };
 
   // Scroll lock — no longer toggles body.style.overflow because that was
   // triggering a 4+ second full-document layout recalc on mobile when the
@@ -154,16 +201,12 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
   useEffect(() => {
     if (!project) return;
     const onKey = (e) => {
-      if (e.key === "Escape" && lightboxIdx == null) onClose();
+      if (e.key === "Escape" && lightboxIdx == null) startClose();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [project, onClose, lightboxIdx]);
-
-  // Reset lightbox when the underlying project changes
-  useEffect(() => {
-    setLightboxIdx(null);
-  }, [project]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project, lightboxIdx, closing]);
 
   if (!project) return null;
 
@@ -182,9 +225,9 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
   return (
     <div
       data-h-modal-backdrop
-      onClick={(e) => {
+      onClick={() => {
         perfLog("Backdrop: click handler fired");
-        onClose();
+        startClose();
       }}
       role="dialog"
       aria-modal="true"
@@ -198,7 +241,11 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
         overflowY: "auto",
         overscrollBehavior: "contain",
         padding: "4vh 4vw",
-        animation: "pm-fade-in .25s ease forwards",
+        opacity: closing ? 0 : 1,
+        transition: "opacity .2s ease",
+        animation: closing
+          ? "none"
+          : "pm-fade-in .25s ease forwards",
       }}
     >
       <article
@@ -224,23 +271,9 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
           onTouchStart={() => perfLog("Close: touchstart")}
           onTouchEnd={() => perfLog("Close: touchend")}
           onPointerDown={() => perfLog("Close: pointerdown")}
-          onClick={(e) => {
+          onClick={() => {
             perfLog("Close: click handler fired");
-            // Pause autoplay videos before unmount so iOS releases the
-            // hardware decoder gracefully instead of blocking the next paint.
-            try {
-              const vids = document.querySelectorAll(
-                "[data-h-modal] video",
-              );
-              vids.forEach((v) => {
-                v.pause();
-                v.removeAttribute("src");
-                v.load();
-              });
-              perfLog("Close: paused videos", vids.length);
-            } catch {}
-            onClose();
-            perfLog("Close: onClose() returned");
+            startClose();
             let frame = 0;
             const tick = () => {
               frame += 1;
@@ -309,6 +342,8 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
             muted={muted}
             ratio={1.85}
             big
+            eager
+            key={`hero-${project.idx}`}
           />
         </div>
 
@@ -435,14 +470,14 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
                   : -1;
                 return (
                   <MediaItem
-                    key={i}
+                    key={m.src || i}
                     item={m}
                     ink={ink}
                     accent={accent}
                     muted={muted}
                     onClick={
                       isMedia && lbIdx >= 0
-                        ? () => setLightboxIdx(lbIdx)
+                        ? () => setLightbox({ projectKey, idx: lbIdx })
                         : undefined
                     }
                   />
@@ -507,8 +542,8 @@ export function ProjectModal({ project, onClose, ink, accent, muted, bg }) {
       <Lightbox
         items={lightboxMedia}
         index={lightboxIdx}
-        onIndexChange={setLightboxIdx}
-        onClose={() => setLightboxIdx(null)}
+        onIndexChange={(idx) => setLightbox({ projectKey, idx })}
+        onClose={() => setLightbox({ projectKey, idx: null })}
         accent={accent}
       />
     </div>

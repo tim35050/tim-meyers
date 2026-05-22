@@ -1,7 +1,7 @@
 // CVModal.jsx — compact CV-row detail: bullets + clickable project tiles.
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Cover } from "./primitives.jsx";
-import { renderWithLinks } from "./ProjectModal.jsx";
+import { renderWithLinks } from "./renderWithLinks.js";
 
 export function CVModal({
   experience,
@@ -13,19 +13,33 @@ export function CVModal({
   muted,
   bg,
 }) {
+  // Fade-out before unmount — see ProjectModal for full rationale.
+  const experienceKey = experience
+    ? `${experience.dates}-${experience.org}-${experience.role}`
+    : null;
+  const [closeState, setCloseState] = useState({
+    experienceKey: null,
+    closing: false,
+  });
+  const closing =
+    closeState.experienceKey === experienceKey ? closeState.closing : false;
+  const startClose = () => {
+    if (closing) return;
+    setCloseState({ experienceKey, closing: true });
+    setTimeout(() => onClose(), 220);
+  };
+
   useEffect(() => {
     if (!experience) return;
     const onKey = (e) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") startClose();
     };
     document.addEventListener("keydown", onKey);
-    // No body scroll-lock — `overscroll-behavior: contain` on the backdrop
-    // prevents scroll chaining without triggering full-document layout
-    // recalc on close (which was causing 4+ second paint cycles on mobile).
     return () => {
       document.removeEventListener("keydown", onKey);
     };
-  }, [experience, onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [experience, closing]);
 
   if (!experience) return null;
 
@@ -36,7 +50,7 @@ export function CVModal({
   return (
     <div
       data-h-modal-backdrop
-      onClick={onClose}
+      onClick={startClose}
       role="dialog"
       aria-modal="true"
       style={{
@@ -49,7 +63,9 @@ export function CVModal({
         overflowY: "auto",
         overscrollBehavior: "contain",
         padding: "8vh 4vw",
-        animation: "pm-fade-in .25s ease forwards",
+        opacity: closing ? 0 : 1,
+        transition: "opacity .2s ease",
+        animation: closing ? "none" : "pm-fade-in .25s ease forwards",
       }}
     >
       <article
@@ -72,7 +88,7 @@ export function CVModal({
             wipe the positioning declared after it. */}
         <button
           data-h-modal-close
-          onClick={onClose}
+          onClick={startClose}
           aria-label="Close"
           style={{
             all: "unset",

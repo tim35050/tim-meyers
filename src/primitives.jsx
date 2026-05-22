@@ -1,14 +1,34 @@
 // primitives.jsx — shared interactive building blocks
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GRAIN_URL } from "./data.js";
+import { useIsMobile } from "./useIsMobile.js";
 
 // ─── Cursor-follow soft glow ─────────────────────────────────────────────
 export function CursorGlow({ accent }) {
   const ref = useRef(null);
-  const target = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-  const pos = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  const isMobile = useIsMobile(1024);
+  const [interactive, setInteractive] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia
+      ? window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      : true,
+  );
+  const initialPos =
+    typeof window !== "undefined"
+      ? { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+      : { x: 0, y: 0 };
+  const target = useRef(initialPos);
+  const pos = useRef(initialPos);
 
   useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const onChange = (e) => setInteractive(e.matches);
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile || !interactive) return;
     let raf;
     const onMove = (e) => {
       target.current = { x: e.clientX, y: e.clientY };
@@ -29,7 +49,9 @@ export function CursorGlow({ accent }) {
       cancelAnimationFrame(raf);
       window.removeEventListener("mousemove", onMove);
     };
-  }, []);
+  }, [interactive, isMobile]);
+
+  if (isMobile || !interactive) return null;
 
   return (
     <div
@@ -366,17 +388,4 @@ export function Clock() {
       }).format(d)}
     </>
   );
-}
-
-// ─── isMobile hook ───────────────────────────────────────────────────────
-export function useIsMobile(bp = 768) {
-  const [m, setM] = useState(
-    () => typeof window !== "undefined" && window.innerWidth < bp,
-  );
-  useEffect(() => {
-    const onR = () => setM(window.innerWidth < bp);
-    window.addEventListener("resize", onR);
-    return () => window.removeEventListener("resize", onR);
-  }, [bp]);
-  return m;
 }
